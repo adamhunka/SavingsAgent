@@ -50,6 +50,13 @@ export class ForbiddenError extends AppError {
   }
 }
 
+export class NotFoundError extends AppError {
+  constructor(message = "Nie znaleziono zasobu") {
+    super("NOT_FOUND", message, 404);
+    this.name = "NotFoundError";
+  }
+}
+
 export class ConflictError extends AppError {
   constructor(message: string, code = "CONFLICT") {
     super(code, message, 409);
