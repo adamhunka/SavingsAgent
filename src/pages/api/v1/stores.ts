@@ -1,8 +1,9 @@
 import type { APIRoute } from "astro";
 import { StoreService } from "@/lib/services/stores.service";
 import { GetStoresQuerySchema, CreateStoreSchema } from "@/lib/utils/validation";
-import { AppError, ValidationError, UnAuthorizedError, ForbiddenError, formatZodErrors } from "@/lib/utils/errors";
+import { AppError, ValidationError, ForbiddenError, formatZodErrors } from "@/lib/utils/errors";
 import type { StoresListResponse, ApiError } from "@/types";
+import { requireAdmin } from "@/lib/utils/auth";
 
 export const prerender = false;
 
@@ -66,33 +67,9 @@ export const GET: APIRoute = async ({ url, locals }) => {
  */
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      throw new UnAuthorizedError("Brak tokenu autoryzacji");
-    }
+    const user = await requireAdmin(request, locals.supabase);
 
-    const token = authHeader.substring(7);
-
-    const {
-      data: { user },
-      error: authError,
-    } = await locals.supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      throw new UnAuthorizedError("Nieprawidłowy token autoryzacji");
-    }
-
-    const { data: profile, error: profileError } = await locals.supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || !profile) {
-      throw new UnAuthorizedError("Nie znaleziono profilu użytkownika");
-    }
-
-    if (profile.role !== "admin") {
+    if (user.role !== "admin") {
       throw new ForbiddenError("Brak uprawnień do tworzenia sklepów");
     }
 

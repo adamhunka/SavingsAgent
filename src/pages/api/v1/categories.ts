@@ -1,8 +1,9 @@
 import type { APIRoute } from "astro";
 import { CategoryService } from "@/lib/services/categories.service";
 import { GetCategoriesQuerySchema, CreateCategorySchema, UpdateCategorySchema } from "@/lib/utils/validation";
-import { AppError, ValidationError, UnAuthorizedError, ForbiddenError, formatZodErrors } from "@/lib/utils/errors";
+import { AppError, ValidationError, ForbiddenError, formatZodErrors } from "@/lib/utils/errors";
 import type { CategoriesListResponse, ApiError, ApiResponse, CategoryDTO } from "@/types";
+import { requireAdmin } from "@/lib/utils/auth";
 
 export const prerender = false;
 
@@ -47,32 +48,9 @@ export const GET: APIRoute = async ({ url, locals }) => {
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      throw new UnAuthorizedError("Brak tokenu autoryzacji");
-    }
+    const user = await requireAdmin(request, locals.supabase);
 
-    const token = authHeader.substring(7);
-    const {
-      data: { user },
-      error: authError,
-    } = await locals.supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      throw new UnAuthorizedError("Nieprawidłowy token autoryzacji");
-    }
-
-    const { data: profile, error: profileError } = await locals.supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || !profile) {
-      throw new UnAuthorizedError("Nie znaleziono profilu użytkownika");
-    }
-
-    if (profile.role !== "admin") {
+    if (user.role !== "admin") {
       throw new ForbiddenError("Brak uprawnień do tworzenia kategorii");
     }
 
@@ -116,31 +94,9 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
       throw new ValidationError("Brak ID kategorii");
     }
 
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      throw new UnAuthorizedError("Brak tokenu autoryzacji");
-    }
+    const user = await requireAdmin(request, locals.supabase);
 
-    const token = authHeader.substring(7);
-    const {
-      data: { user },
-      error: authError,
-    } = await locals.supabase.auth.getUser(token);
-    if (authError || !user) {
-      throw new UnAuthorizedError("Nieprawidłowy token autoryzacji");
-    }
-
-    const { data: profile, error: profileError } = await locals.supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || !profile) {
-      throw new UnAuthorizedError("Nie znaleziono profilu użytkownika");
-    }
-
-    if (profile.role !== "admin") {
+    if (user.role !== "admin") {
       throw new ForbiddenError("Brak uprawnień do aktualizacji kategorii");
     }
 
@@ -184,31 +140,9 @@ export const DELETE: APIRoute = async ({ request, params, locals }) => {
       throw new ValidationError("Brak ID kategorii");
     }
 
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      throw new UnAuthorizedError("Brak tokenu autoryzacji");
-    }
+    const user = await requireAdmin(request, locals.supabase);
 
-    const token = authHeader.substring(7);
-    const {
-      data: { user },
-      error: authError,
-    } = await locals.supabase.auth.getUser(token);
-    if (authError || !user) {
-      throw new UnAuthorizedError("Nieprawidłowy token autoryacji");
-    }
-
-    const { data: profile, error: profileError } = await locals.supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || !profile) {
-      throw new UnAuthorizedError("Nie znaleziono profilu użytkownika");
-    }
-
-    if (profile.role !== "admin") {
+    if (user.role !== "admin") {
       throw new ForbiddenError("Brak uprawnień do usuwania kategorii");
     }
 
