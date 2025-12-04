@@ -124,6 +124,40 @@ export const UpdateFlyerSchema = z
     }
   );
 
+/**
+ * Schema dla generowania upload URL POST /api/v1/flyers/:flyer_id/pages/upload-url
+ */
+export const UploadUrlRequestSchema = z
+  .object({
+    page_number: z
+      .number({ required_error: "Numer strony jest wymagany" })
+      .int("Numer strony musi być liczbą całkowitą")
+      .positive("Numer strony musi być > 0"),
+    filename: z
+      .string({ required_error: "Nazwa pliku jest wymagana" })
+      .min(1, "Nazwa pliku nie może być pusta")
+      .max(255, "Nazwa pliku nie może przekraczać 255 znaków")
+      .regex(/^[a-zA-Z0-9_.-]+$/, "Nazwa pliku może zawierać tylko litery, cyfry, _, -, ."),
+    content_type: z.enum(["image/jpeg", "image/png", "image/webp"], {
+      errorMap: () => ({ message: "Dozwolone typy: image/jpeg, image/png, image/webp" }),
+    }),
+    width: z.number().int().positive("Szerokość musi być > 0").optional(),
+    height: z.number().int().positive("Wysokość musi być > 0").optional(),
+  })
+  .refine(
+    (data) => {
+      // Jeśli podano width, to height musi być również podane (i vice versa)
+      if ((data.width && !data.height) || (!data.width && data.height)) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Jeśli podano width lub height, oba pola muszą być wypełnione",
+      path: ["width"],
+    }
+  );
+
 export type GetStoreQuery = z.infer<typeof GetStoresQuerySchema>;
 export type CreateStoreInput = z.infer<typeof CreateStoreSchema>;
 export type GetCategoriesQuery = z.infer<typeof GetCategoriesQuerySchema>;
@@ -132,3 +166,4 @@ export type UpdateCategoryInput = z.infer<typeof UpdateCategorySchema>;
 export type GetFlyersQuery = z.infer<typeof GetFlyersQuerySchema>;
 export type CreateFlyerInput = z.infer<typeof CreateFlyerSchema>;
 export type UpdateFlyerInput = z.infer<typeof UpdateFlyerSchema>;
+export type UploadUrlRequestInput = z.infer<typeof UploadUrlRequestSchema>;
