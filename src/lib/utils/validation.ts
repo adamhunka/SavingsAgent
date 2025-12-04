@@ -136,10 +136,18 @@ export const UpdateFlyerSchema = z
   );
 
 /**
- * Schema dla generowania upload URL POST /api/v1/flyers/:flyer_id/pages/upload-url
+ * Schema dla generowania upload URL POST /api/v1/uploads/sign
  */
 export const UploadUrlRequestSchema = z
   .object({
+    flyer_id: z
+      .string({ required_error: "ID gazetki jest wymagane" })
+      .uuid("ID gazetki musi być poprawnym UUID"),
+    flyer_slug: z
+      .string({ required_error: "Slug gazetki jest wymagany" })
+      .min(1, "Slug gazetki nie może być pusty")
+      .max(100, "Slug gazetki nie może przekraczać 100 znaków")
+      .regex(/^[a-z0-9-]+$/, "Slug może zawierać tylko małe litery, cyfry i -"),
     page_number: z
       .number({ required_error: "Numer strony jest wymagany" })
       .int("Numer strony musi być liczbą całkowitą")

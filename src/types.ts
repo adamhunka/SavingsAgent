@@ -197,9 +197,13 @@ export type CreatePageCommand = Required<Pick<TablesInsert<"pages">, "flyer_id" 
  * - page_number musi być podane
  * - filename musi być podane
  * - content_type musi być podane
- * UŻYCIE: POST /api/v1/pages/:page_number/upload-url
+ * - flyer_id musi być poprawnym UUID
+ * - flyer_slug musi być podane
+ * UŻYCIE: POST /api/v1/uploads/sign
  */
 export interface UploadUrlRequestCommand {
+  flyer_id: string;
+  flyer_slug: string;
   page_number: number;
   filename: string;
   content_type: string;
