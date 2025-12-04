@@ -313,6 +313,27 @@ export const SearchProductsQuerySchema = z.object({
   per_page: z.coerce.number().int().min(1, "Limit musi być >=1").max(100, "Limit nie może przekraczać 100").default(20),
 });
 
+/**
+ * Schema dla body requestu POST /api/v1/jobs/pages/:page_id/process
+ * Endpoint do tworzenia zadania przetwarzania strony (OCR -> LLM -> ekstrakcja produktów)
+ */
+export const CreateJobRequestSchema = z.object({
+  model_hint: z
+    .string()
+    .trim()
+    .min(1, "Model hint nie może być pusty")
+    .max(100, "Model hint nie może przekraczać 100 znaków")
+    .optional(),
+  cost_limit_cents: z
+    .number({
+      invalid_type_error: "Limit kosztów musi być liczbą",
+    })
+    .int("Limit kosztów musi być liczbą całkowitą")
+    .positive("Limit kosztów musi być liczbą dodatnią")
+    .optional(),
+  force: z.boolean({ invalid_type_error: "Force musi być wartością boolean" }).default(false),
+});
+
 export type UuidParam = z.infer<typeof UuidParamSchema>;
 export type PageIdParam = z.infer<typeof PageIdParamSchema>;
 export type GetStoreQuery = z.infer<typeof GetStoresQuerySchema>;
@@ -328,3 +349,4 @@ export type ListProductsQuery = z.infer<typeof ListProductsQuerySchema>;
 export type CreateProductInput = z.infer<typeof CreateProductSchema>;
 export type UpdateProductInput = z.infer<typeof UpdateProductSchema>;
 export type SearchProductsQuery = z.infer<typeof SearchProductsQuerySchema>;
+export type CreateJobRequestInput = z.infer<typeof CreateJobRequestSchema>;

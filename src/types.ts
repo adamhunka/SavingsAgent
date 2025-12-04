@@ -20,8 +20,10 @@ export type FlyerEntity = Tables<"flyers">;
 export type PageEntity = Tables<"pages">;
 export type ProductEntity = Tables<"products">;
 export type ProfileEntity = Tables<"profiles">;
+export type JobEntity = Tables<"jobs">;
 export type FlyerStatus = Enums<"flyer_status">;
 export type PageProcessingStatus = Enums<"page_processing_status">;
+export type JobStatus = Enums<"job_status">;
 export type UserRole = Enums<"user_role">;
 
 // ============================================================================
@@ -125,6 +127,17 @@ export type ProductDetailDTO = ProductDTO & {
  * UŻYCIE: GET /api/v1/profiles, GET /api/v1/profiles/:id
  */
 export type ProfileDTO = Omit<ProfileEntity, "created_at" | "updated_at">;
+
+/**
+ * JobDTO
+ * Dane zadania wysyłane do klienta.
+ * Usuwa pola timestamp i szczegółowe informacje.
+ * UŻYCIE: POST /api/v1/jobs/pages/:page_id/process, GET /api/v1/jobs/:id
+ */
+export type JobDTO = Pick<
+  JobEntity,
+  "id" | "page_id" | "status" | "created_at" | "started_at" | "finished_at" | "error_details" | "meta"
+>;
 
 // ============================================================================
 // COMMAND MODELS
@@ -233,6 +246,24 @@ export interface VerifyPageCommand {
   action: "approve" | "reject" | "mark_no_products";
   verified_by: string;
   error_details?: string | null;
+}
+
+/**
+ * CreateJobCommand
+ * Dane do utworzenia nowego zadania przetwarzania strony.
+ * WALIDACJA BIZNESOWA:
+ * - page_id musi być UUID
+ * - requested_by musi być UUID użytkownika z rolą admin
+ * - cost_limit_cents musi być liczbą dodatnią lub null
+ * - force określa czy ignorować istniejące aktywne zadania
+ * UŻYCIE: POST /api/v1/jobs/pages/:page_id/process
+ */
+export interface CreateJobCommand {
+  page_id: string;
+  model_hint?: string;
+  cost_limit_cents?: number;
+  force?: boolean;
+  requested_by: string;
 }
 
 // Product Commands
