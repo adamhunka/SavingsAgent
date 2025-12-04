@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { CategoryService } from "@/lib/services/categories.service";
 import { GetCategoriesQuerySchema, CreateCategorySchema, UpdateCategorySchema } from "@/lib/utils/validation";
-import { AppError, ValidationError, ForbiddenError, formatZodErrors } from "@/lib/utils/errors";
+import { AppError, ValidationError, formatZodErrors } from "@/lib/utils/errors";
 import type { CategoriesListResponse, ApiError, ApiResponse, CategoryDTO } from "@/types";
 import { requireAdmin } from "@/lib/utils/auth";
 
@@ -48,11 +48,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const user = await requireAdmin(request, locals.supabase);
-
-    if (user.role !== "admin") {
-      throw new ForbiddenError("Brak uprawnień do tworzenia kategorii");
-    }
+    await requireAdmin(request, locals.supabase);
 
     let body;
     try {
@@ -94,11 +90,7 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
       throw new ValidationError("Brak ID kategorii");
     }
 
-    const user = await requireAdmin(request, locals.supabase);
-
-    if (user.role !== "admin") {
-      throw new ForbiddenError("Brak uprawnień do aktualizacji kategorii");
-    }
+    await requireAdmin(request, locals.supabase);
 
     let body;
     try {
@@ -140,11 +132,7 @@ export const DELETE: APIRoute = async ({ request, params, locals }) => {
       throw new ValidationError("Brak ID kategorii");
     }
 
-    const user = await requireAdmin(request, locals.supabase);
-
-    if (user.role !== "admin") {
-      throw new ForbiddenError("Brak uprawnień do usuwania kategorii");
-    }
+    await requireAdmin(request, locals.supabase);
 
     const categoryService = new CategoryService(locals.supabase);
     await categoryService.delete(id);

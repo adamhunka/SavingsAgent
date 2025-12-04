@@ -1,58 +1,47 @@
 import type { APIRoute } from "astro";
-import { StoreService } from "@/lib/services/stores.service";
-import { GetStoresQuerySchema, CreateStoreSchema } from "@/lib/utils/validation";
-import { AppError, ValidationError, formatZodErrors } from "@/lib/utils/errors";
-import type { StoresListResponse, ApiError } from "@/types";
+import { FlyerService } from "@/lib/services/flyers.service";
+import { GetFlyersQuerySchema, CreateFlyerSchema } from "@/lib/utils/validation";
 import { requireAdmin } from "@/lib/utils/auth";
+import { AppError, formatZodErrors, ValidationError } from "@/lib/utils/errors";
+import type { ApiError, FlyersListResponse } from "@/types";
 
 export const prerender = false;
 
 /**
- * GET /api/v1/stores
- * Pobiera listę sklepów z paginacją i wyszukiwaniem
+ * GET /api/v1/flyers
+ * Pobiera listę gazetek z paginacją i filtrami
  *
  * DOSTĘPNOŚĆ: Publiczny (każdy może wywołać)
- *
- * PARAMETRY QUERY:
- * - q (string, optional): Wyszukiwanie po nazwie
- * - page (number, optional, default: 1): Numer strony
- * - limit (number, optional, default: 20, max: 100): Rekordów na stronę
- *
- * ODPOWIEDZI:
- * - 200: Lista sklepów z metadanymi
- * - 400: Błędne parametry
- * - 500: Błąd serwera
+ * FILTRY: status (domyślnie: active), store_id, page, per_page
  */
 export const GET: APIRoute = async ({ url, locals }) => {
   try {
     const queryParams = {
-      q: url.searchParams.get("q") ?? undefined,
+      status: url.searchParams.get("status") ?? undefined,
+      store_id: url.searchParams.get("store_id") ?? undefined,
       page: url.searchParams.get("page") ?? undefined,
-      limit: url.searchParams.get("limit") ?? undefined,
+      per_page: url.searchParams.get("per_page") ?? undefined,
     };
 
-    const validationResult = GetStoresQuerySchema.safeParse(queryParams);
+    const validationResult = GetFlyersQuerySchema.safeParse(queryParams);
 
     if (!validationResult.success) {
       const details = formatZodErrors(validationResult.error);
       throw new ValidationError("Nieprawidłowe parametry zapytania", details);
     }
 
-    const { q, page, limit } = validationResult.data;
-    const storesService = new StoreService(locals.supabase);
-    const result = await storesService.list({ q, page, limit });
+    const { status, store_id, page, per_page } = validationResult.data;
+    const flyerService = new FlyerService(locals.supabase);
+    const result = await flyerService.listFlyers({ status, store_id, page, per_page });
 
-    const response: StoresListResponse = {
+    const response: FlyersListResponse = {
       data: result.data,
       meta: result.meta,
     };
 
     return new Response(JSON.stringify(response), {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=60",
-      },
+      headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=300" },
     });
   } catch (error) {
     return handleError(error);
@@ -60,15 +49,14 @@ export const GET: APIRoute = async ({ url, locals }) => {
 };
 
 /**
- * POST /api/v1/stores
- * Tworzy nowy sklep
+ * POST /api/v1/flyers
+ * Tworzy nową gazetkę
  *
  * DOSTĘPNOŚĆ: Tylko administratorzy
  */
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
     await requireAdmin(request, locals.supabase);
-
     let body;
     try {
       body = await request.json();
@@ -76,21 +64,22 @@ export const POST: APIRoute = async ({ request, locals }) => {
       throw new ValidationError("Nieprawidłowy format JSON");
     }
 
-    const validationResult = CreateStoreSchema.safeParse(body);
+    const validationResult = CreateFlyerSchema.safeParse(body);
 
     if (!validationResult.success) {
       const details = formatZodErrors(validationResult.error);
       throw new ValidationError("Nieprawidłowe dane wejściowe", details);
     }
 
-    const storeService = new StoreService(locals.supabase);
-    const store = await storeService.create(validationResult.data);
+    const flyerService = new FlyerService(locals.supabase);
+    const flyer = await flyerService.createFlyer(validationResult.data);
 
-    return new Response(JSON.stringify({ data: store }), {
+    return new Response(JSON.stringify({ data: flyer }), {
       status: 201,
       headers: {
         "Content-Type": "application/json",
         "Cache-Control": "no-store",
+        Location: `/api/v1/flyers/${flyer.id}`,
       },
     });
   } catch (error) {

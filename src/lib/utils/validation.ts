@@ -64,8 +64,71 @@ export const UpdateCategorySchema = z
     message: "Co najmniej jedno pole musi być podane",
   });
 
+/**
+ * Schema dla parametrów zapytania GET /api/v1/flyers
+ */
+export const GetFlyersQuerySchema = z.object({
+  status: z.enum(["draft", "active", "archived"]).optional(),
+  store_id: z.string().uuid("ID sklepu musi być poprawnym UUID").optional(),
+  page: z.coerce.number().int().min(1, "Numer strony musi być >=1").default(1),
+  per_page: z.coerce.number().int().min(1, "Limit musi być >=1").max(100, "Limit nie może przekraczać 100").default(20),
+});
+
+/**
+ * Schema dla tworzenia gazetki POST /api/v1/flyers
+ */
+export const CreateFlyerSchema = z
+  .object({
+    store_id: z.string().uuid("ID sklepu musi być poprawnym UUID"),
+    valid_from: z.coerce
+      .date({ invalid_type_error: "Data początku musi być poprawną datą" })
+      .transform((date) => date.toISOString().split("T")[0]),
+    valid_to: z.coerce
+      .date({ invalid_type_error: "Data końca musi być poprawną datą" })
+      .transform((date) => date.toISOString().split("T")[0]),
+    status: z.enum(["draft", "active", "archived"]).default("draft").optional(),
+  })
+  .refine((data) => new Date(data.valid_to) >= new Date(data.valid_from), {
+    message: "Data końca promocji musi być >= data początku",
+    path: ["valid_to"],
+  });
+
+/**
+ * Schema dla aktualizacji gazetki PATCH /api/v1/flyers/:id
+ */
+export const UpdateFlyerSchema = z
+  .object({
+    valid_from: z.coerce
+      .date({ invalid_type_error: "Data początku musi być poprawną datą" })
+      .transform((date) => date.toISOString().split("T")[0])
+      .optional(),
+    valid_to: z.coerce
+      .date({ invalid_type_error: "Data końca musi być poprawną datą" })
+      .transform((date) => date.toISOString().split("T")[0])
+      .optional(),
+    status: z.enum(["draft", "active", "archived"]).optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "Co najmniej jedno pole musi być podane",
+  })
+  .refine(
+    (data) => {
+      if (data.valid_from && data.valid_to) {
+        return new Date(data.valid_to) >= new Date(data.valid_from);
+      }
+      return true;
+    },
+    {
+      message: "Data końca promocji musi być >= data początku",
+      path: ["valid_to"],
+    }
+  );
+
 export type GetStoreQuery = z.infer<typeof GetStoresQuerySchema>;
 export type CreateStoreInput = z.infer<typeof CreateStoreSchema>;
 export type GetCategoriesQuery = z.infer<typeof GetCategoriesQuerySchema>;
 export type CreateCategoryInput = z.infer<typeof CreateCategorySchema>;
 export type UpdateCategoryInput = z.infer<typeof UpdateCategorySchema>;
+export type GetFlyersQuery = z.infer<typeof GetFlyersQuerySchema>;
+export type CreateFlyerInput = z.infer<typeof CreateFlyerSchema>;
+export type UpdateFlyerInput = z.infer<typeof UpdateFlyerSchema>;
