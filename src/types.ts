@@ -20,8 +20,10 @@ export type FlyerEntity = Tables<"flyers">;
 export type PageEntity = Tables<"pages">;
 export type ProductEntity = Tables<"products">;
 export type ProfileEntity = Tables<"profiles">;
+export type JobEntity = Tables<"jobs">;
 export type FlyerStatus = Enums<"flyer_status">;
 export type PageProcessingStatus = Enums<"page_processing_status">;
+export type JobStatus = Enums<"job_status">;
 export type UserRole = Enums<"user_role">;
 
 // ============================================================================
@@ -126,6 +128,17 @@ export type ProductDetailDTO = ProductDTO & {
  */
 export type ProfileDTO = Omit<ProfileEntity, "created_at" | "updated_at">;
 
+/**
+ * JobDTO
+ * Dane zadania wysyłane do klienta.
+ * Usuwa pola timestamp i szczegółowe informacje.
+ * UŻYCIE: POST /api/v1/jobs/pages/:page_id/process, GET /api/v1/jobs/:id
+ */
+export type JobDTO = Pick<
+  JobEntity,
+  "id" | "page_id" | "status" | "created_at" | "started_at" | "finished_at" | "error_details" | "meta"
+>;
+
 // ============================================================================
 // COMMAND MODELS
 // ============================================================================
@@ -184,9 +197,13 @@ export type CreatePageCommand = Required<Pick<TablesInsert<"pages">, "flyer_id" 
  * - page_number musi być podane
  * - filename musi być podane
  * - content_type musi być podane
- * UŻYCIE: POST /api/v1/pages/:page_number/upload-url
+ * - flyer_id musi być poprawnym UUID
+ * - flyer_slug musi być podane
+ * UŻYCIE: POST /api/v1/uploads/sign
  */
 export interface UploadUrlRequestCommand {
+  flyer_id: string;
+  flyer_slug: string;
   page_number: number;
   filename: string;
   content_type: string;
@@ -233,6 +250,24 @@ export interface VerifyPageCommand {
   action: "approve" | "reject" | "mark_no_products";
   verified_by: string;
   error_details?: string | null;
+}
+
+/**
+ * CreateJobCommand
+ * Dane do utworzenia nowego zadania przetwarzania strony.
+ * WALIDACJA BIZNESOWA:
+ * - page_id musi być UUID
+ * - requested_by musi być UUID użytkownika z rolą admin
+ * - cost_limit_cents musi być liczbą dodatnią lub null
+ * - force określa czy ignorować istniejące aktywne zadania
+ * UŻYCIE: POST /api/v1/jobs/pages/:page_id/process
+ */
+export interface CreateJobCommand {
+  page_id: string;
+  model_hint?: string;
+  cost_limit_cents?: number;
+  force?: boolean;
+  requested_by: string;
 }
 
 // Product Commands
@@ -414,3 +449,58 @@ export type SearchResultDTO = ProductListItemDTO & {
   similarity_score?: number;
   rank?: number;
 };
+
+// ============================================================================
+// FRONTEND TYPES
+// ============================================================================
+
+/**
+ * ProductFilters
+ * Typ reprezentujący stan filtrów w aplikacji klienckiej.
+ * UŻYCIE: Frontend - ProductBrowser component
+ */
+export interface ProductFilters {
+  store_id?: string[]; // Obsługa wielu sklepów
+  category_id?: string;
+  q?: string;
+  min_price?: number;
+  max_price?: number;
+  sort: "created_at_desc" | "price_asc" | "price_desc";
+}
+
+/**
+ * ProductListItemViewModel
+ * Rozszerzenie DTO o pola pomocnicze dla UI.
+ * Na razie alias dla ProductListItemDTO, ale może być rozszerzone w przyszłości.
+ * UŻYCIE: Frontend - ProductCard component
+ */
+export type ProductListItemViewModel = ProductListItemDTO;
+
+/**
+ * ProductViewModel
+ * ViewModel dla widoku szczegółów produktu (ProductModal).
+ * Mapowany z ProductDetailDTO z camelCase naming dla lepszej ergonomii w React.
+ * UŻYCIE: Frontend - ProductModal component
+ */
+export interface ProductViewModel {
+  id: string;
+  name: string;
+  category: {
+    id: string;
+    name: string;
+    iconName?: string | null;
+  };
+  pricePromo: number;
+  priceRegular?: number | null;
+  description?: string | null;
+  conditions?: string | null;
+  boundingBox?: Record<string, unknown> | null;
+  imagePath?: string | null;
+  pageId: string;
+  pageNumber: number;
+  store: {
+    id: string;
+    name: string;
+    logoUrl?: string | null;
+  };
+}

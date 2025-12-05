@@ -92,6 +92,66 @@ export interface Database {
           },
         ];
       };
+      jobs: {
+        Row: {
+          cost_limit_cents: number | null;
+          created_at: string;
+          error_details: Json | null;
+          finished_at: string | null;
+          id: string;
+          meta: Json | null;
+          model_hint: string | null;
+          page_id: string;
+          queued_at: string | null;
+          requested_by: string;
+          started_at: string | null;
+          status: Database["public"]["Enums"]["job_status"];
+        };
+        Insert: {
+          cost_limit_cents?: number | null;
+          created_at?: string;
+          error_details?: Json | null;
+          finished_at?: string | null;
+          id?: string;
+          meta?: Json | null;
+          model_hint?: string | null;
+          page_id: string;
+          queued_at?: string | null;
+          requested_by: string;
+          started_at?: string | null;
+          status?: Database["public"]["Enums"]["job_status"];
+        };
+        Update: {
+          cost_limit_cents?: number | null;
+          created_at?: string;
+          error_details?: Json | null;
+          finished_at?: string | null;
+          id?: string;
+          meta?: Json | null;
+          model_hint?: string | null;
+          page_id?: string;
+          queued_at?: string | null;
+          requested_by?: string;
+          started_at?: string | null;
+          status?: Database["public"]["Enums"]["job_status"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "jobs_page_id_fkey";
+            columns: ["page_id"];
+            isOneToOne: false;
+            referencedRelation: "pages";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "jobs_requested_by_fkey";
+            columns: ["requested_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       pages: {
         Row: {
           ai_raw_response: Json | null;
@@ -310,6 +370,7 @@ export interface Database {
     };
     Enums: {
       flyer_status: "draft" | "active" | "archived";
+      job_status: "queued" | "processing" | "completed" | "failed" | "no_products";
       page_processing_status: "pending" | "processing" | "processed" | "verified" | "error" | "no_products";
       user_role: "admin" | "user";
     };
@@ -433,6 +494,7 @@ export const Constants = {
   public: {
     Enums: {
       flyer_status: ["draft", "active", "archived"],
+      job_status: ["queued", "processing", "completed", "failed", "no_products"],
       page_processing_status: ["pending", "processing", "processed", "verified", "error", "no_products"],
       user_role: ["admin", "user"],
     },
