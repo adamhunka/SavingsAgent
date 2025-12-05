@@ -14,4 +14,3 @@ export const POST: APIRoute = async ({ locals, redirect }) => {
   // Przekierowanie do strony logowania
   return redirect("/login", 302);
 };
-
