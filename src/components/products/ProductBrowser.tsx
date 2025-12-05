@@ -13,6 +13,7 @@ import { FilterSidebar } from "./FilterSidebar";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
 import { InfiniteScrollTrigger } from "./InfiniteScrollTrigger";
+import { ProductModal } from "./ProductModal";
 import { useProductSearch } from "@/components/hooks/useProductSearch";
 import { useMetadata } from "@/components/hooks/useMetadata";
 
@@ -46,6 +47,42 @@ export function ProductBrowser() {
   const { categories, stores, isLoading: isLoadingMetadata, error: metadataError } = useMetadata();
 
   const [isMobileFilterOpen, setIsMobileFilterOpen] = React.useState(false);
+  const [selectedProductId, setSelectedProductId] = React.useState<string | null>(null);
+
+  // Sprawdź URL params przy montowaniu i zmianach URL
+  React.useEffect(() => {
+    const handleUrlChange = () => {
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get("product");
+      setSelectedProductId(productId);
+    };
+
+    // Initial check
+    handleUrlChange();
+
+    // Listen for popstate (back/forward buttons)
+    window.addEventListener("popstate", handleUrlChange);
+
+    return () => {
+      window.removeEventListener("popstate", handleUrlChange);
+    };
+  }, []);
+
+  // Otwieranie modala - aktualizacja URL
+  const handleOpenProductModal = (productId: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("product", productId);
+    window.history.pushState({}, "", url.toString());
+    setSelectedProductId(productId);
+  };
+
+  // Zamykanie modala - usunięcie parametru z URL
+  const handleCloseProductModal = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("product");
+    window.history.pushState({}, "", url.toString());
+    setSelectedProductId(null);
+  };
 
   // Mapowanie store_id na nazwę sklepu
   const getStoreName = (storeId: string): string => {
@@ -200,11 +237,7 @@ export function ProductBrowser() {
                       product={product}
                       categoryIcon={getCategoryIcon(product.category_id)}
                       storeName={getStoreName(product.store_id)}
-                      onClick={() => {
-                        // TODO: Otwarcie modala ze szczegółami produktu
-                        // eslint-disable-next-line no-console
-                        console.log("Kliknięto produkt:", product.product_id);
-                      }}
+                      onClick={() => handleOpenProductModal(product.product_id)}
                     />
                   ))}
                 </div>
@@ -216,6 +249,11 @@ export function ProductBrowser() {
           </div>
         </div>
       </div>
+
+      {/* Product Detail Modal */}
+      {selectedProductId && (
+        <ProductModal productId={selectedProductId} onClose={handleCloseProductModal} />
+      )}
     </div>
   );
 }

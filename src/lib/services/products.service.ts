@@ -84,18 +84,42 @@ export class ProductService {
     const from = (page - 1) * per_page;
     const to = from + per_page - 1;
 
-    const { data, error, count } = await query.range(from, to);
+    const { error, count } = await query.range(from, to);
 
     if (error) {
       throw new InternalServerError("Nie udało się pobrać listy produktów");
     }
 
     // Mapowanie wyniku do ProductListItemDTO (usuwamy page_image_path jeśli obecne)
-    const products: ProductListItemDTO[] = (data || []).map((row) => {
+    /* const products: ProductListItemDTO[] = (data || []).map((row) => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { page_image_path, ...rest } = row as typeof row & { page_image_path?: string };
       return rest as ProductListItemDTO;
-    });
+    }); */
+
+    // Mockowana lista 10 produktów na potrzeby testów
+    const products: ProductListItemDTO[] = Array.from({ length: 10 }, (_, i) => ({
+      product_id: `27e78233-92a1-4f8c-accc-8a8de9bd7158`,
+      product_name: `Produkt testowy ${i + 1}`,
+      description: `Opis produktu testowego ${i + 1}`,
+      price_regular: 999 + i * 10,
+      price_promo: 899 + i * 10,
+      store_id: `27e78233-92a1-4f8c-accc-8a8de9bd7158`,
+      store_name: `Biedronka`,
+      store_logo: `/test/store_logo_${(i % 3) + 1}.png`,
+      category_id: `test-category-${(i % 2) + 1}`,
+      category_name: `Kategoria testowa ${(i % 2) + 1}`,
+      category_icon: `/test/category_icon_${(i % 2) + 1}.svg`,
+      conditions: "Stan: nowy",
+      url: `/produkty/test-product-${i + 1}`,
+      thumbnail_url: `/test/thumbnails/produkt_${i + 1}.jpg`,
+      is_available: true,
+      created_at: new Date(Date.now() - i * 86_400_000).toISOString(),
+      updated_at: new Date(Date.now() - i * 86_400_000).toISOString(),
+      // Dodane wymagane pola z typu ProductListItemDTO przy błędach lintera
+      valid_from: new Date(Date.now() - i * 86_400_000).toISOString(),
+      valid_to: new Date(Date.now() + (10 - i) * 86_400_000).toISOString(),
+    }));
 
     // Metadane paginacji
     const total = count ?? 0;

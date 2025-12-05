@@ -475,3 +475,32 @@ export interface ProductFilters {
  * UŻYCIE: Frontend - ProductCard component
  */
 export type ProductListItemViewModel = ProductListItemDTO;
+
+/**
+ * ProductViewModel
+ * ViewModel dla widoku szczegółów produktu (ProductModal).
+ * Mapowany z ProductDetailDTO z camelCase naming dla lepszej ergonomii w React.
+ * UŻYCIE: Frontend - ProductModal component
+ */
+export interface ProductViewModel {
+  id: string;
+  name: string;
+  category: {
+    id: string;
+    name: string;
+    iconName?: string | null;
+  };
+  pricePromo: number;
+  priceRegular?: number | null;
+  description?: string | null;
+  conditions?: string | null;
+  boundingBox?: Record<string, unknown> | null;
+  imagePath?: string | null;
+  pageId: string;
+  pageNumber: number;
+  store: {
+    id: string;
+    name: string;
+    logoUrl?: string | null;
+  };
+}

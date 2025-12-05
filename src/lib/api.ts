@@ -6,6 +6,7 @@
 
 import type {
   ProductListResponse,
+  ProductDetailResponse,
   CategoriesListResponse,
   StoresListResponse,
   ProductFilters,
@@ -148,4 +149,22 @@ export async function fetchStores(): Promise<StoresListResponse> {
   });
 
   return handleResponse<StoresListResponse>(response);
+}
+
+/**
+ * Pobiera szczegółowe informacje o produkcie
+ * @param productId - UUID produktu
+ * @returns Promise z ProductDetailResponse
+ */
+export async function fetchProductDetail(productId: string): Promise<ProductDetailResponse> {
+  const url = `${API_BASE_URL}/api/v1/products/${productId}`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  return handleResponse<ProductDetailResponse>(response);
 }
