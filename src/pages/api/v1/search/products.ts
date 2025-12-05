@@ -110,4 +110,3 @@ function handleError(error: unknown): Response {
     headers: { "Content-Type": "application/json" },
   });
 }
-

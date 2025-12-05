@@ -136,11 +136,7 @@ export class JobService {
    * @throws InternalServerError w przypadku błędu DB
    */
   private async ensurePageExists(pageId: string): Promise<void> {
-    const { data, error } = await this.supabase
-      .from("pages")
-      .select("id")
-      .eq("id", pageId)
-      .maybeSingle();
+    const { data, error } = await this.supabase.from("pages").select("id").eq("id", pageId).maybeSingle();
 
     if (error) {
       throw new InternalServerError("Nie udało się sprawdzić istnienia strony");
@@ -197,4 +193,3 @@ export class JobService {
     return data as JobEntity | null;
   }
 }
-

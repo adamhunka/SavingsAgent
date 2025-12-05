@@ -449,3 +449,29 @@ export type SearchResultDTO = ProductListItemDTO & {
   similarity_score?: number;
   rank?: number;
 };
+
+// ============================================================================
+// FRONTEND TYPES
+// ============================================================================
+
+/**
+ * ProductFilters
+ * Typ reprezentujący stan filtrów w aplikacji klienckiej.
+ * UŻYCIE: Frontend - ProductBrowser component
+ */
+export interface ProductFilters {
+  store_id?: string[]; // Obsługa wielu sklepów
+  category_id?: string;
+  q?: string;
+  min_price?: number;
+  max_price?: number;
+  sort: "created_at_desc" | "price_asc" | "price_desc";
+}
+
+/**
+ * ProductListItemViewModel
+ * Rozszerzenie DTO o pola pomocnicze dla UI.
+ * Na razie alias dla ProductListItemDTO, ale może być rozszerzone w przyszłości.
+ * UŻYCIE: Frontend - ProductCard component
+ */
+export type ProductListItemViewModel = ProductListItemDTO;

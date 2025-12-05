@@ -140,9 +140,7 @@ export const UpdateFlyerSchema = z
  */
 export const UploadUrlRequestSchema = z
   .object({
-    flyer_id: z
-      .string({ required_error: "ID gazetki jest wymagane" })
-      .uuid("ID gazetki musi być poprawnym UUID"),
+    flyer_id: z.string({ required_error: "ID gazetki jest wymagane" }).uuid("ID gazetki musi być poprawnym UUID"),
     flyer_slug: z
       .string({ required_error: "Slug gazetki jest wymagany" })
       .min(1, "Slug gazetki nie może być pusty")
