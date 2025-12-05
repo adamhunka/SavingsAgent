@@ -1,0 +1,182 @@
+---
+/**
+ * src/pages/admin/flyers/[flyerId]/upload.astro
+ * Strona uploadu stron gazetki dla administratorów.
+ * Umożliwia wgrywanie obrazów stron gazetki z kompresją i opcjonalnym przetwarzaniem AI.
+ */
+
+import Layout from "@/layouts/Layout.astro";
+import { FlyerService } from "@/lib/services/flyers.service";
+import { UploadFlowContainer } from "@/components/admin/upload/UploadFlowContainer";
+import { UploadService } from "@/lib/services/upload.service";
+
+export const prerender = false;
+
+// 1. Autoryzacja - sprawdzenie czy użytkownik jest zalogowany i ma rolę admin
+const supabase = Astro.locals.supabase;
+const {
+  data: { session },
+} = await supabase.auth.getSession();
+
+if (!session) {
+  return Astro.redirect("/login");
+}
+
+const { data: profile } = await supabase
+  .from("profiles")
+  .select("role, email")
+  .eq("id", session.user.id)
+  .single();
+
+if (!profile || profile.role !== "admin") {
+  return Astro.redirect("/");
+}
+
+// 2. Pobranie flyerId z URL
+const { flyerId } = Astro.params;
+
+if (!flyerId) {
+  return Astro.redirect("/admin");
+}
+
+// 3. Walidacja UUID format
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+if (!uuidRegex.test(flyerId)) {
+  return new Response("Invalid flyer ID format", { status: 400 });
+}
+
+// 4. Pobranie danych gazetki z pages
+const flyerService = new FlyerService(supabase);
+
+let flyerData;
+try {
+  flyerData = await flyerService.getFlyerById(flyerId, { includePages: true });
+} catch (error) {
+  // Gazetka nie istnieje
+  return new Response("Flyer not found", { status: 404 });
+}
+
+// 5. Sprawdzenie czy gazetka nie jest zarchiwizowana
+if (flyerData.status === "archived") {
+  return new Response("Cannot upload pages to archived flyer", { status: 400 });
+}
+
+// 6. Obliczenie następnego wolnego numeru strony
+const uploadService = new UploadService(supabase);
+const nextPageNumber = await uploadService.getNextPageNumber(flyerId);
+
+// 7. Generowanie slug sklepu
+const flyerSlug = flyerData.store_name
+  .toLowerCase()
+  .trim()
+  .replace(/\s+/g, "-")
+  .replace(/[^a-z0-9-]/g, "")
+  .replace(/-+/g, "-")
+  .replace(/^-|-$/g, "");
+
+// 8. Sprawdzenie query params
+const autoProcess = Astro.url.searchParams.get("autoProcess") === "true";
+
+// 9. Breadcrumbs data
+const breadcrumbs = [
+  { label: "Dashboard", href: "/admin" },
+  { label: "Gazetki", href: "/admin/flyers" },
+  {
+    label: `${flyerData.store_name} (${new Date(flyerData.valid_from).toLocaleDateString("pl-PL")})`,
+    href: `/admin/flyers/${flyerId}`,
+  },
+  { label: "Upload stron", href: "" },
+];
+---
+
+<Layout title={`Upload stron - ${flyerData.store_name}`}>
+  <div class="min-h-screen bg-background">
+    <!-- Header z breadcrumbs -->
+    <div class="border-b bg-card">
+      <div class="container mx-auto px-4 py-4">
+        <!-- Breadcrumbs -->
+        <nav class="flex mb-4" aria-label="Breadcrumb">
+          <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            {
+              breadcrumbs.map((crumb, index) => (
+                <li class="inline-flex items-center">
+                  {index > 0 && (
+                    <svg
+                      class="w-3 h-3 mx-1 text-muted-foreground"
+                      aria-hidden="true"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 6 10"
+                    >
+                      <path
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="m1 9 4-4-4-4"
+                      />
+                    </svg>
+                  )}
+                  {crumb.href ? (
+                    <a
+                      href={crumb.href}
+                      class="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground"
+                    >
+                      {crumb.label}
+                    </a>
+                  ) : (
+                    <span class="text-sm font-medium text-foreground">{crumb.label}</span>
+                  )}
+                </li>
+              ))
+            }
+          </ol>
+        </nav>
+
+        <!-- Page header -->
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-bold tracking-tight">Upload stron gazetki</h1>
+            <p class="text-muted-foreground mt-1">
+              Dodaj obrazy stron dla gazetki {flyerData.store_name}
+            </p>
+          </div>
+
+          <!-- Back button -->
+          <a
+            href={`/admin/flyers/${flyerId}`}
+            class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="mr-2"
+            >
+              <path d="m12 19-7-7 7-7"></path>
+              <path d="M19 12H5"></path>
+            </svg>
+            Powrót
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <UploadFlowContainer
+      client:only="react"
+      flyerId={flyerId}
+      flyerSlug={flyerSlug}
+      flyerData={flyerData}
+      initialPageNumber={nextPageNumber}
+      autoProcess={autoProcess}
+    />
+  </div>
+</Layout>
+

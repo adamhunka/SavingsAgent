@@ -356,3 +356,31 @@ export type CreateProductInput = z.infer<typeof CreateProductSchema>;
 export type UpdateProductInput = z.infer<typeof UpdateProductSchema>;
 export type SearchProductsQuery = z.infer<typeof SearchProductsQuerySchema>;
 export type CreateJobRequestInput = z.infer<typeof CreateJobRequestSchema>;
+
+/**
+ * Schema dla walidacji CreatePageCommand
+ */
+export const CreatePageSchema = z.object({
+  flyer_id: z.string().uuid("ID gazetki musi być poprawnym UUID"),
+  page_number: z
+    .number()
+    .int("Numer strony musi być liczbą całkowitą")
+    .positive("Numer strony musi być liczbą dodatnią"),
+  image_path: z
+    .string({ required_error: "Ścieżka do obrazu jest wymagana" })
+    .trim()
+    .min(1, "Ścieżka do obrazu nie może być pusta")
+    .max(500, "Ścieżka do obrazu nie może przekraczać 500 znaków"),
+  image_width: z
+    .number()
+    .int("Szerokość obrazu musi być liczbą całkowitą")
+    .positive("Szerokość obrazu musi być liczbą dodatnią")
+    .optional(),
+  image_height: z
+    .number()
+    .int("Wysokość obrazu musi być liczbą całkowitą")
+    .positive("Wysokość obrazu musi być liczbą dodatnią")
+    .optional(),
+});
+
+export type CreatePageInput = z.infer<typeof CreatePageSchema>;
