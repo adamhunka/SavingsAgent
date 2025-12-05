@@ -1,0 +1,31 @@
+---
+/**
+ * src/pages/login.astro
+ * Strona logowania - punkt wejścia dla uwierzytelniania użytkowników
+ */
+
+import AuthLayout from "@/layouts/AuthLayout.astro";
+import LoginForm from "@/components/auth/LoginForm";
+
+// Sprawdzenie czy użytkownik jest już zalogowany
+const supabase = Astro.locals.supabase;
+const {
+  data: { session },
+} = await supabase.auth.getSession();
+
+// Jeśli użytkownik jest zalogowany, przekieruj go do odpowiedniej strony
+if (session) {
+  // Pobierz rolę użytkownika
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", session.user.id).single();
+
+  if (profile) {
+    const redirectUrl = profile.role === "admin" ? "/admin" : "/";
+    return Astro.redirect(redirectUrl);
+  }
+}
+---
+
+<AuthLayout title="SavingsAgent - Logowanie">
+  <LoginForm client:load />
+</AuthLayout>
+

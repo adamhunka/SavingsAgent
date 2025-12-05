@@ -1,8 +1,16 @@
 ---
-import { ProductBrowser } from "../components/products/ProductBrowser";
-import Layout from "../layouts/Layout.astro";
+/**
+ * src/pages/index.astro
+ * Strona główna aplikacji - lista produktów (publiczna)
+ */
+
+import Layout from "@/layouts/Layout.astro";
+import { ProductBrowser } from "@/components/products/ProductBrowser";
+
+// Lista produktów jest publiczna - nie wymaga logowania
+// zgodnie z planem UI (Public Product List)
 ---
 
-<Layout title="SavingsAgent - Przeglądaj promocje z Lidla i Biedronki">
+<Layout title="SavingsAgent - Promocje">
   <ProductBrowser client:load />
 </Layout>
