@@ -504,3 +504,164 @@ export interface ProductViewModel {
     logoUrl?: string | null;
   };
 }
+
+// ============================================================================
+// UPLOAD FLOW TYPES
+// ============================================================================
+
+/**
+ * FileWithMetadata
+ * Rozszerzenie standardowego obiektu File o dodatkowe metadane
+ * potrzebne do kolejki uploadu i identyfikacji.
+ * UŻYCIE: Frontend - Upload Flow
+ */
+export interface FileWithMetadata {
+  id: string; // UUID generowane po stronie klienta
+  file: File; // natywny obiekt File
+  preview?: string; // Data URL do preview (opcjonalne)
+  dimensions?: {
+    width: number;
+    height: number;
+  };
+}
+
+/**
+ * UploadStatus
+ * Możliwe statusy elementu w kolejce uploadu.
+ * UŻYCIE: Frontend - Upload Flow
+ */
+export type UploadStatus =
+  | "pending" // Oczekuje na rozpoczęcie
+  | "validating" // Walidacja pliku
+  | "compressing" // Kompresja obrazu
+  | "signing" // Pobieranie signed URL
+  | "uploading" // Upload do storage
+  | "registering" // Rejestracja w bazie
+  | "success" // Zakończone pomyślnie
+  | "error" // Błąd
+  | "cancelled"; // Anulowane
+
+/**
+ * UploadError
+ * Szczegóły błędu uploadu.
+ * UŻYCIE: Frontend - Upload Flow
+ */
+export interface UploadError {
+  code: string; // np. 'VALIDATION_ERROR', 'NETWORK_ERROR', 'API_ERROR'
+  message: string; // komunikat dla użytkownika
+  details?: Record<string, string[]>; // szczegóły z API (opcjonalne)
+  retryable: boolean; // czy można ponowić operację
+}
+
+/**
+ * UploadQueueItem
+ * Reprezentuje pojedynczy element w kolejce uploadu z pełnym stanem procesu.
+ * UŻYCIE: Frontend - Upload Flow
+ */
+export interface UploadQueueItem {
+  id: string; // UUID (zgodny z FileWithMetadata.id)
+  file: File; // oryginalny plik
+  compressedFile?: File; // plik po kompresji
+  preview?: string; // Data URL preview
+  pageNumber: number; // automatycznie przydzielony numer strony
+
+  // Status procesu
+  status: UploadStatus;
+  progress: number; // 0-100
+
+  // Metadane obrazu
+  dimensions: {
+    width: number;
+    height: number;
+  };
+
+  // Dane z API
+  uploadUrl?: string; // signed URL z API
+  publicPath?: string; // ścieżka w storage
+  pageId?: string; // ID utworzonej strony w bazie
+
+  // Błędy
+  error?: UploadError;
+
+  // Timestamps
+  addedAt: Date;
+  startedAt?: Date;
+  completedAt?: Date;
+}
+
+/**
+ * GlobalError
+ * Błąd globalny niezwiązany z konkretnym plikiem.
+ * UŻYCIE: Frontend - Upload Flow
+ */
+export interface GlobalError {
+  id: string; // UUID błędu
+  code: string;
+  message: string;
+  severity: "error" | "warning" | "info";
+  dismissible: boolean;
+  action?: {
+    label: string;
+    handler: () => void;
+  };
+}
+
+/**
+ * UploadFlowState
+ * Główny stan procesu uploadu zarządzany przez useUploadFlow hook.
+ * UŻYCIE: Frontend - Upload Flow
+ */
+export interface UploadFlowState {
+  // Kolejka
+  queue: UploadQueueItem[];
+
+  // Statystyki
+  stats: {
+    total: number;
+    pending: number;
+    processing: number; // validating + compressing + signing + uploading + registering
+    success: number;
+    error: number;
+    cancelled: number;
+  };
+
+  // Stan globalny
+  isUploading: boolean; // czy trwa jakiś upload
+  autoProcess: boolean; // czy uruchomić przetwarzanie po uploadzie
+
+  // Błędy globalne
+  globalErrors: GlobalError[];
+
+  // Flyer context
+  flyerId: string;
+  flyerSlug: string;
+  nextPageNumber: number; // następny wolny numer strony
+}
+
+/**
+ * CompressionOptions
+ * Opcje kompresji obrazu.
+ * UŻYCIE: Frontend - Compression Service
+ */
+export interface CompressionOptions {
+  maxWidth: number; // maksymalna szerokość (default: 2000px)
+  maxHeight: number; // maksymalna wysokość (default: 2000px)
+  quality: number; // jakość 0-1 (default: 0.85)
+  targetSizeKB?: number; // docelowy rozmiar w KB (opcjonalne, wymusza dodatkową kompresję)
+}
+
+/**
+ * CompressionResult
+ * Wynik operacji kompresji.
+ * UŻYCIE: Frontend - Compression Service
+ */
+export interface CompressionResult {
+  file: File; // skompresowany plik
+  dimensions: {
+    width: number;
+    height: number;
+  };
+  originalSize: number; // rozmiar oryginalny w bajtach
+  compressedSize: number; // rozmiar po kompresji w bajtach
+  compressionRatio: number; // stosunek kompresji (0-1)
+}
